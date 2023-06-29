@@ -55,12 +55,24 @@ public class DiaryService {
     public void createDiary(LocalDate date, String text){
         //logger.info("started to create diary");
         // 날씨 데이터 가져오기(API 에서 가져오기? or DB 에서 가져오기?)
-        DateWeather dateWeather = getDateWeather(date);
-
-        // 파싱된 데이터 + 일기 값 db에 넣기
         Diary nowDiary = new Diary();
-        nowDiary.setDateWeather(dateWeather);
-        nowDiary.setText(text);
+
+        if(date != LocalDate.now()){
+            String weatherDate = getWeatherString();
+            Map<String, Object> parsedWeather = parseWeather(weatherDate);
+            nowDiary.setWeather(parsedWeather.get("main").toString());
+            nowDiary.setIcon(parsedWeather.get("icon").toString());
+            nowDiary.setTemperature((Double) parsedWeather.get("temp"));
+            nowDiary.setText(text);
+            nowDiary.setDate(date);
+        } else {
+            DateWeather dateWeather = getDateWeather(date);
+
+            // 파싱된 데이터 + 일기 값 db에 넣기
+
+            nowDiary.setDateWeather(dateWeather);
+            nowDiary.setText(text);
+        }
         diaryRepository.save(nowDiary);
         //logger.info("end to create diary");
     }
@@ -78,7 +90,8 @@ public class DiaryService {
         return dateWeather;
     }
 
-    private DateWeather getDateWeather(LocalDate date){
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public DateWeather getDateWeather(LocalDate date){
         List<DateWeather> dateWeatherListFromDB = dateWeatherRepository.findAllByDate(date);
         if(dateWeatherListFromDB.size() == 0){
             //새로 api에서 날씨 정보를 가져와야한다.
@@ -89,7 +102,6 @@ public class DiaryService {
         }
     }
 
-    @Transactional(readOnly = true)
     public List<Diary> readDiary(LocalDate date){
         if(date.isAfter(LocalDate.ofYearDay(3050, 1))){
             throw new InvalidDate();
@@ -102,12 +114,14 @@ public class DiaryService {
         return diaryRepository.findAllByDateBetween(startDate, endDate);
     }
 
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public void updateDiary(LocalDate date, String text){
         Diary nowDiary = diaryRepository.getFirstByDate(date);
         nowDiary.setText(text);
         diaryRepository.save(nowDiary);
     }
 
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public void deleteDiary(LocalDate date){
         diaryRepository.deleteAllByDate(date);
     }

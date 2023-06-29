@@ -1,7 +1,6 @@
 package com.zerobase.weather.controller;
 
 import com.zerobase.weather.domain.Diary;
-import com.zerobase.weather.error.InvalidDate;
 import com.zerobase.weather.service.DiaryService;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
